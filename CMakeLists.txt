@@ -8,7 +8,7 @@ find_package(Vulkan REQUIRED FATAL_ERROR)
 
 
 add_executable(${PROJECT_NAME}
-        src/main.cpp)
+        src/main.cpp src/VulkanRenderer.cpp src/VulkanRenderer.h src/Utilities.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC external/glfw/include
