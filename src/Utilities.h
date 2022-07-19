@@ -1,10 +1,11 @@
 #pragma once
 
-// Indices of Queue Families
+// location of Queue Families
 
 struct QueueFamilyIndices {
-    int graphicsFamily = -1;
+    int graphicsFamily = -1; //if -1 does not exist
 
+    //check if queue families are valid
     bool isValid()
     {
         return graphicsFamily >= 0;
