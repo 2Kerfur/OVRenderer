@@ -8,6 +8,7 @@ int VulkanRenderer::init(GLFWwindow *newWindow) {
     try {
         createInstance();
         getPhysicalDevice();
+        createLogicalDevice();
     } catch(const std::runtime_error &e)
     {
         printf("ERROR: %s\n", e.what());

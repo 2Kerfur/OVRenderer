@@ -24,6 +24,8 @@ private:
 
     VkQueue  graphicsQueue;
 
+    VkSurfaceKHR surface;
+
     //Vulkan Functions
     void createInstance();
     
@@ -31,7 +33,10 @@ private:
     // - Get functions
     void getPhysicalDevice();
 
+    // - Create functions
     void createLogicalDevice();
+    void createSurface();
+
 
 
     // -- Support
