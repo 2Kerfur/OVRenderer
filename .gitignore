@@ -2,7 +2,11 @@
 **/cmake-build-debug
 *.sh
 
+**/.vs
+**/out
 
+**/src/2D engine Version
+**/src/3D engine Version
 
 # Prerequisites
 *.d
