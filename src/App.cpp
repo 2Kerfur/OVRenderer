@@ -72,7 +72,7 @@ namespace ovr {
     
 	void MainApp::loadGameObjects()
 	{
-        std::shared_ptr<OvrModel> ovrModel = OvrModel::createModelFromFile(ovrDevice, "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64-Release\\models\\lada_niva.obj");
+        std::shared_ptr<OvrModel> ovrModel = OvrModel::createModelFromFile(ovrDevice, "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64-Release\\resources\\models\\lada_niva.obj");
 
         auto cube = OvrGameObject::createGameObject();
         cube.model = ovrModel;

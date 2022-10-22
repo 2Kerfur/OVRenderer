@@ -66,8 +66,8 @@ namespace ovr {
 		pipelineConfig.pipelineLayout = pipelineLayout;
 		ovrPipeline = std::make_unique<OvrPipeline>(
 			ovrDevice,
-			"shaders/simple_shader.vert.spv",
-			"shaders/simple_shader.frag.spv",
+			"resources/shaders/simple_shader.vert.spv",
+			"resources/shaders/simple_shader.frag.spv",
 			pipelineConfig
 			);
 	}

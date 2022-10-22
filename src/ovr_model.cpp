@@ -213,12 +213,9 @@ namespace ovr {
 					//std::vector<float> vertices(3.1, 2.3f, 2.3f);
 
 					vertex.color = {
-						/*vertices,
-						vertices,
-						vertices,*/
-						//attrib.colors[3 * index.vertex_index + 0],
-						//attrib.colors[3 * index.vertex_index + 1],
-						//attrib.colors[3 * index.vertex_index + 2],
+						1,
+						1,
+						1,
 
 					};
 				}
