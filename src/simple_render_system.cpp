@@ -20,7 +20,7 @@
 namespace ovr {
 	struct SimplePushConstantData {
 		glm::mat4 transform{ 1.f };
-		alignas (16) glm::vec3 color;
+		glm::mat4 normalMatrix{ 1.f };
 	};
 
 	SimpleRenderSystem::SimpleRenderSystem(OVRDevice &device, VkRenderPass renderPass) : ovrDevice(device) {
@@ -88,8 +88,9 @@ namespace ovr {
 
 
 			SimplePushConstantData push{};
-			push.color = obj.color;
-			push.transform = projectionView * obj.transform.mat4();
+			auto normalMatrix = obj.transform.mat4();
+			push.transform = projectionView * normalMatrix;
+			push.normalMatrix = normalMatrix;
 			vkCmdPushConstants(
 				commandBuffer,
 				pipelineLayout,

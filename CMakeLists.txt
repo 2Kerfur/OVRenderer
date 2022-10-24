@@ -18,7 +18,7 @@ add_executable(${PROJECT_NAME}
         "src/ovr_renderer.cpp" "src/simple_render_system.h" 
         "src/simple_render_system.cpp" "src/ovr_camera.h" 
         "src/ovr_camera.cpp" "src/keyboard_movement_controller.h"
-        "src/keyboard_movement_controller.cpp" "src/ovr_utils.h" "src/utils/resource_loader.h" "src/utils/resource_loader.cpp" "src/engine_config.h")
+        "src/keyboard_movement_controller.cpp" "src/ovr_utils.h" "src/utils/resource_loader.h" "src/utils/resource_loader.cpp" "src/engine_config.h" "src/ovr_game_object.cpp")
 
 
 target_include_directories(${PROJECT_NAME}
@@ -41,7 +41,6 @@ target_link_directories(${PROJECT_NAME}
 if (WIN32)
     target_link_libraries(${PROJECT_NAME} glfw3) #glfw window
     target_link_libraries (${PROJECT_NAME} vulkan-1) # ${Vulkan_LIBRARIES}
-    #TODO: add support for windows
 endif (WIN32)
 
 if (UNIX)

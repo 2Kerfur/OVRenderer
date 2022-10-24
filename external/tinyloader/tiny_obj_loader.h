@@ -1,18 +1,14 @@
 /*
 The MIT License (MIT)
-
-Copyright (c) 2012-2016 Syoyo Fujita and many contributors.
-
+Copyright (c) 2012-2017 Syoyo Fujita and many contributors.
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in
 all copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,6 +19,9 @@ THE SOFTWARE.
 */
 
 //
+// version 1.1.0 : Support parsing vertex color(#144)
+// version 1.0.8 : Fix parsing `g` tag just after `usemtl`(#138)
+// version 1.0.7 : Support multiple tex options(#126)
 // version 1.0.6 : Add TINYOBJLOADER_USE_DOUBLE option(#124)
 // version 1.0.5 : Ignore `Tr` when `d` exists in MTL(#43)
 // version 1.0.4 : Support multiple filenames for 'mtllib'(#112)
@@ -152,9 +151,10 @@ typedef struct {
   std::string diffuse_texname;             // map_Kd
   std::string specular_texname;            // map_Ks
   std::string specular_highlight_texname;  // map_Ns
-  std::string bump_texname;                // map_bump, bump
+  std::string bump_texname;                // map_bump, map_Bump, bump
   std::string displacement_texname;        // disp
   std::string alpha_texname;               // map_d
+  std::string reflection_texname;          // refl
 
   texture_option_t ambient_texopt;
   texture_option_t diffuse_texopt;
@@ -163,6 +163,7 @@ typedef struct {
   texture_option_t bump_texopt;
   texture_option_t displacement_texopt;
   texture_option_t alpha_texopt;
+  texture_option_t reflection_texopt;
 
   // PBR extension
   // http://exocortex.com/blog/extending_wavefront_mtl_to_support_pbr
@@ -174,7 +175,6 @@ typedef struct {
   real_t anisotropy;           // aniso. [0, 1] default 0
   real_t anisotropy_rotation;  // anisor. [0, 1] default 0
   real_t pad0;
-  real_t pad1;
   std::string roughness_texname;  // map_Pr
   std::string metallic_texname;   // map_Pm
   std::string sheen_texname;      // map_Ps
@@ -227,6 +227,7 @@ typedef struct {
   std::vector<real_t> vertices;   // 'v'
   std::vector<real_t> normals;    // 'vn'
   std::vector<real_t> texcoords;  // 'vt'
+  std::vector<real_t> colors;     // extension: vertex colors
 } attrib_t;
 
 typedef struct callback_t_ {
@@ -361,7 +362,6 @@ namespace tinyobj {
 
 MaterialReader::~MaterialReader() {}
 
-#define TINYOBJ_SSCANF_BUFFER_SIZE (4096)
 
 struct vertex_index {
   int v_idx, vt_idx, vn_idx;
@@ -398,22 +398,26 @@ static std::istream &safeGetline(std::istream &is, std::string &t) {
   std::istream::sentry se(is, true);
   std::streambuf *sb = is.rdbuf();
 
-  for (;;) {
-    int c = sb->sbumpc();
-    switch (c) {
-      case '\n':
-        return is;
-      case '\r':
-        if (sb->sgetc() == '\n') sb->sbumpc();
-        return is;
-      case EOF:
-        // Also handle the case when the last line has no line ending
-        if (t.empty()) is.setstate(std::ios::eofbit);
-        return is;
-      default:
-        t += static_cast<char>(c);
+  if (se) {
+    for (;;) {
+      int c = sb->sbumpc();
+      switch (c) {
+        case '\n':
+          return is;
+        case '\r':
+          if (sb->sgetc() == '\n') sb->sbumpc();
+          return is;
+        case EOF:
+          // Also handle the case when the last line has no line ending
+          if (t.empty()) is.setstate(std::ios::eofbit);
+          return is;
+        default:
+          t += static_cast<char>(c);
+      }
     }
   }
+
+  return is;
 }
 
 #define IS_SPACE(x) (((x) == ' ') || ((x) == '\t'))
@@ -596,6 +600,19 @@ static inline real_t parseReal(const char **token, double default_value = 0.0) {
   return f;
 }
 
+static inline bool parseReal(const char **token, real_t *out) {
+  (*token) += strspn((*token), " \t");
+  const char *end = (*token) + strcspn((*token), " \t\r");
+  double val;
+  bool ret = tryParseDouble((*token), end, &val);
+  if (ret) {
+    real_t f = static_cast<real_t>(val);
+    (*out) = f;
+  }
+  (*token) = end;
+  return ret;
+}
+
 static inline void parseReal2(real_t *x, real_t *y, const char **token,
                                const double default_x = 0.0,
                                const double default_y = 0.0) {
@@ -621,6 +638,23 @@ static inline void parseV(real_t *x, real_t *y, real_t *z, real_t *w,
   (*y) = parseReal(token, default_y);
   (*z) = parseReal(token, default_z);
   (*w) = parseReal(token, default_w);
+}
+
+// Extension: parse vertex with colors(6 items)
+static inline bool parseVertexWithColor(real_t *x, real_t *y, real_t *z, real_t *r,
+                          real_t *g, real_t *b,
+                          const char **token, const double default_x = 0.0,
+                          const double default_y = 0.0,
+                          const double default_z = 0.0) {
+  (*x) = parseReal(token, default_x);
+  (*y) = parseReal(token, default_y);
+  (*z) = parseReal(token, default_z);
+
+  (*r) = parseReal(token, 1.0);
+  (*g) = parseReal(token, 1.0);
+  (*b) = parseReal(token, 1.0);
+
+  return true;
 }
 
 static inline bool parseOnOff(const char **token, bool default_value = true) {
@@ -788,6 +822,7 @@ static bool ParseTextureNameAndOption(std::string *texname,
   const char *token = linebuf;  // Assume line ends with NULL
 
   while (!IS_NEW_LINE((*token))) {
+    token += strspn(token, " \t");  // skip space
     if ((0 == strncmp(token, "-blendu", 7)) && IS_SPACE((token[7]))) {
       token += 8;
       texopt->blendu = parseOnOff(&token, /* default */ true);
@@ -831,7 +866,6 @@ static bool ParseTextureNameAndOption(std::string *texname,
       parseReal2(&(texopt->brightness), &(texopt->contrast), &token, 0.0, 1.0);
     } else {
       // Assume texture filename
-      token += strspn(token, " \t");         // skip space
       size_t len = strcspn(token, " \t\r");  // untile next space
       texture_name = std::string(token, token + len);
       token += len;
@@ -858,6 +892,7 @@ static void InitMaterial(material_t *material) {
   material->specular_highlight_texname = "";
   material->bump_texname = "";
   material->displacement_texname = "";
+  material->reflection_texname = "";
   material->alpha_texname = "";
   for (int i = 0; i < 3; i++) {
     material->ambient[i] = 0.f;
@@ -1024,14 +1059,12 @@ void LoadMtl(std::map<std::string, int> *material_map,
       has_tr = false;
 
       // set new mtl name
-      char namebuf[TINYOBJ_SSCANF_BUFFER_SIZE];
       token += 7;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
-      material.name = namebuf;
+      {
+        std::stringstream sstr;
+        sstr << token;
+        material.name = sstr.str();
+      }
       continue;
     }
 
@@ -1237,6 +1270,15 @@ void LoadMtl(std::map<std::string, int> *material_map,
     }
 
     // bump texture
+    if ((0 == strncmp(token, "map_Bump", 8)) && IS_SPACE(token[8])) {
+      token += 9;
+      ParseTextureNameAndOption(&(material.bump_texname),
+                                &(material.bump_texopt), token,
+                                /* is_bump */ true);
+      continue;
+    }
+
+    // bump texture
     if ((0 == strncmp(token, "bump", 4)) && IS_SPACE(token[4])) {
       token += 5;
       ParseTextureNameAndOption(&(material.bump_texname),
@@ -1260,6 +1302,15 @@ void LoadMtl(std::map<std::string, int> *material_map,
       token += 5;
       ParseTextureNameAndOption(&(material.displacement_texname),
                                 &(material.displacement_texopt), token,
+                                /* is_bump */ false);
+      continue;
+    }
+
+    // reflection map
+    if ((0 == strncmp(token, "refl", 4)) && IS_SPACE(token[4])) {
+      token += 5;
+      ParseTextureNameAndOption(&(material.reflection_texname),
+                                &(material.reflection_texopt), token,
                                 /* is_bump */ false);
       continue;
     }
@@ -1398,6 +1449,7 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
   attrib->vertices.clear();
   attrib->normals.clear();
   attrib->texcoords.clear();
+  attrib->colors.clear();
   shapes->clear();
 
   std::stringstream errss;
@@ -1430,6 +1482,7 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
   std::vector<real_t> v;
   std::vector<real_t> vn;
   std::vector<real_t> vt;
+  std::vector<real_t> vc;
   std::vector<tag_t> tags;
   std::vector<std::vector<vertex_index> > faceGroup;
   std::string name;
@@ -1472,10 +1525,15 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
     if (token[0] == 'v' && IS_SPACE((token[1]))) {
       token += 2;
       real_t x, y, z;
-      parseReal3(&x, &y, &z, &token);
+      real_t r, g, b;
+      parseVertexWithColor(&x, &y, &z, &r, &g, &b, &token);
       v.push_back(x);
       v.push_back(y);
       v.push_back(z);
+
+      vc.push_back(r);
+      vc.push_back(g);
+      vc.push_back(b);
       continue;
     }
 
@@ -1526,13 +1584,10 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
 
     // use mtl
     if ((0 == strncmp(token, "usemtl", 6)) && IS_SPACE((token[6]))) {
-      char namebuf[TINYOBJ_SSCANF_BUFFER_SIZE];
       token += 7;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
+      std::stringstream ss;
+      ss << token;
+      std::string namebuf = ss.str();
 
       int newMaterialId = -1;
       if (material_map.find(namebuf) != material_map.end()) {
@@ -1602,7 +1657,9 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
       // flush previous face group.
       bool ret = exportFaceGroupToShape(&shape, faceGroup, tags, material, name,
                                         triangulate);
-      if (ret) {
+      (void)ret; // return value not used.
+
+      if (shape.mesh.indices.size() > 0) {
         shapes->push_back(shape);
       }
 
@@ -1646,14 +1703,10 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
       shape = shape_t();
 
       // @todo { multiple object name? }
-      char namebuf[TINYOBJ_SSCANF_BUFFER_SIZE];
       token += 2;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
-      name = std::string(namebuf);
+      std::stringstream ss;
+      ss << token;
+      name = ss.str();
 
       continue;
     }
@@ -1661,14 +1714,10 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
     if (token[0] == 't' && IS_SPACE(token[1])) {
       tag_t tag;
 
-      char namebuf[4096];
       token += 2;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
-      tag.name = std::string(namebuf);
+      std::stringstream ss;
+      ss << token;
+      tag.name = ss.str();
 
       token += tag.name.size() + 1;
 
@@ -1689,15 +1738,9 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
 
       tag.stringValues.resize(static_cast<size_t>(ts.num_strings));
       for (size_t i = 0; i < static_cast<size_t>(ts.num_strings); ++i) {
-        char stringValueBuffer[4096];
-
-#ifdef _MSC_VER
-        sscanf_s(token, "%s", stringValueBuffer,
-                 (unsigned)_countof(stringValueBuffer));
-#else
-        std::sscanf(token, "%s", stringValueBuffer);
-#endif
-        tag.stringValues[i] = stringValueBuffer;
+        std::stringstream sstr;
+        sstr << token;
+        tag.stringValues[i] = sstr.str();
         token += tag.stringValues[i].size() + 1;
       }
 
@@ -1725,6 +1768,7 @@ bool LoadObj(attrib_t *attrib, std::vector<shape_t> *shapes,
   attrib->vertices.swap(v);
   attrib->normals.swap(vn);
   attrib->texcoords.swap(vt);
+  attrib->colors.swap(vc);
 
   return true;
 }
@@ -1777,6 +1821,7 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
     // vertex
     if (token[0] == 'v' && IS_SPACE((token[1]))) {
       token += 2;
+      // TODO(syoyo): Support parsing vertex color extension.
       real_t x, y, z, w;  // w is optional. default = 1.0
       parseV(&x, &y, &z, &w, &token);
       if (callback.vertex_cb) {
@@ -1836,14 +1881,10 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
 
     // use mtl
     if ((0 == strncmp(token, "usemtl", 6)) && IS_SPACE((token[6]))) {
-      char namebuf[TINYOBJ_SSCANF_BUFFER_SIZE];
       token += 7;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf,
-               static_cast<unsigned int>(_countof(namebuf)));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
+      std::stringstream ss;
+      ss << token;
+      std::string namebuf = ss.str();
 
       int newMaterialId = -1;
       if (material_map.find(namebuf) != material_map.end()) {
@@ -1857,7 +1898,7 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
       }
 
       if (callback.usemtl_cb) {
-        callback.usemtl_cb(user_data, namebuf, material_id);
+        callback.usemtl_cb(user_data, namebuf.c_str(), material_id);
       }
 
       continue;
@@ -1951,14 +1992,11 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
     // object name
     if (token[0] == 'o' && IS_SPACE((token[1]))) {
       // @todo { multiple object name? }
-      char namebuf[TINYOBJ_SSCANF_BUFFER_SIZE];
       token += 2;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
-      std::string object_name = std::string(namebuf);
+
+      std::stringstream ss;
+      ss << token;
+      std::string object_name = ss.str();
 
       if (callback.object_cb) {
         callback.object_cb(user_data, object_name.c_str());
@@ -1971,14 +2009,10 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
     if (token[0] == 't' && IS_SPACE(token[1])) {
       tag_t tag;
 
-      char namebuf[4096];
       token += 2;
-#ifdef _MSC_VER
-      sscanf_s(token, "%s", namebuf, (unsigned)_countof(namebuf));
-#else
-      std::sscanf(token, "%s", namebuf);
-#endif
-      tag.name = std::string(namebuf);
+      std::stringstream ss;
+      ss << token;
+      tag.name = ss.str();
 
       token += tag.name.size() + 1;
 
@@ -1999,15 +2033,9 @@ bool LoadObjWithCallback(std::istream &inStream, const callback_t &callback,
 
       tag.stringValues.resize(static_cast<size_t>(ts.num_strings));
       for (size_t i = 0; i < static_cast<size_t>(ts.num_strings); ++i) {
-        char stringValueBuffer[4096];
-
-#ifdef _MSC_VER
-        sscanf_s(token, "%s", stringValueBuffer,
-                 (unsigned)_countof(stringValueBuffer));
-#else
-        std::sscanf(token, "%s", stringValueBuffer);
-#endif
-        tag.stringValues[i] = stringValueBuffer;
+        std::stringstream ss;
+        ss << token;
+        tag.stringValues[i] = ss.str();
         token += tag.stringValues[i].size() + 1;
       }
 

@@ -24,7 +24,7 @@ namespace ovr {
 
 		glm::vec3 rotation{};
 
-		glm::mat4 mat4() {
+		/*glm::mat4 mat4() {
 			const float c3 = glm::cos(rotation.z);
 			const float s3 = glm::sin(rotation.z);
 			const float c2 = glm::cos(rotation.x);
@@ -51,7 +51,10 @@ namespace ovr {
 					0.0f,
 				},
 				{translation.x, translation.y, translation.z, 1.0f} };
-		}
+		}*/
+		glm::mat4 mat4();
+
+		glm::mat3 normalMatrix();
 	};
 
 	class OvrGameObject {
