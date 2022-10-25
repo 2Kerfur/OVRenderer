@@ -35,7 +35,7 @@ unsigned char* LoadTexture(std::string texture_path,
         //stbi_set_flip_vertically_on_load(true); 
     }
     else {
-       // stbi_set_flip_vertically_on_load(false);
+        //stbi_set_flip_vertically_on_load(false);
     }
 
     //return stbi_load(finalPath.c_str(), width, height, channels_in_file, 0); //load image

@@ -17,7 +17,6 @@
 #include "ovr_camera.h"
 #include <array>
 #include <stdexcept>
-#include <array>
 #include <chrono>
 
 namespace ovr {

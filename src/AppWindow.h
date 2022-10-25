@@ -30,6 +30,7 @@ namespace ovr {
 		void resetWindowResizedFlag() { framebufferResized = false; }
 		void createWindowSurface(VkInstance instance, VkSurfaceKHR* surface);
 
+		void fullscreenWindow(bool fullscreen);
 		GLFWwindow* getGLFWindow() const { return window; }
 	private:
 		static void framebufferResizeCallback(GLFWwindow* window, int width, int height);

@@ -41,6 +41,8 @@ namespace ovr {
 		window = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+		fullscreenWindow(true);
 	}
 	
 
@@ -49,6 +51,13 @@ namespace ovr {
 		if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create window surface");
 		}
+	}
+
+	void AppWindow::fullscreenWindow(bool fullscreen)
+	{
+		const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, mode->width, mode->height, mode->refreshRate);
+		//glfwSwapInterval(1); //set fps lock to 60 max fps
 	}
 
 }
