@@ -7,7 +7,7 @@
 #include "App.h"
 #include "simple_render_system.h"
 #include "keyboard_movement_controller.h"
-
+#include <iostream>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -55,7 +55,7 @@ namespace ovr {
 
             float aspect = ovrRender.getAspectRatio();
             //camera.setOrthographicProjection(-1, 1, -1, 1, -1, 1);
-            camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 10.f);
+            camera.setPerspectiveProjection(glm::radians(50.f), aspect, 0.1f, 1000.f);
 
 			if (auto commandBuffer = ovrRender.beginFrame()) {
 
@@ -71,14 +71,27 @@ namespace ovr {
     
 	void MainApp::loadGameObjects()
 	{
-        std::shared_ptr<OvrModel> ovrModel = OvrModel::createModelFromFile(ovrDevice, "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64-Release\\resources\\models\\lada_niva.obj");
+        std::shared_ptr<OvrModel> ovrModel[10];
+        for (int i = 0; i < 10; i++) {
+            ovrModel[i] = OvrModel::createModelFromFile(
+                ovrDevice,
+                "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64-Release\\resources\\models\\lada_niva.obj");
+            std::cout << i;
+        }
+        float trans = 0;
+        ovr::OvrGameObject cube[10];
+        for (int i = 0; i < 10; i++) {
+            cube[i] = OvrGameObject::createGameObject();
+            cube[i].model = ovrModel[0];
+            cube[i].transform.translation = { trans, .0f, 2.5f };
+            cube[i].transform.scale = { .5f, .5f, .5f };
+            trans = trans + 1;
+        }
 
-        auto cube = OvrGameObject::createGameObject();
-        cube.model = ovrModel;
-        cube.transform.translation = { .0f, .0f, 2.5f };
-        cube.transform.scale = { .5f, .5f, .5f };
+        for (int i = 0; i < 10; i++) {
+            gameObjects.push_back(std::move(cube[i]));
+        }
 
-        gameObjects.push_back(std::move(cube));
 	}
 
 

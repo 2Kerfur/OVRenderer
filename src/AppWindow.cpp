@@ -42,7 +42,7 @@ namespace ovr {
 		glfwSetWindowUserPointer(window, this);
 		glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
 
-		fullscreenWindow(true);
+		//fullscreenWindow(true);
 	}
 	
 

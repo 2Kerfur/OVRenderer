@@ -18,7 +18,7 @@ add_executable(${PROJECT_NAME}
         "src/ovr_renderer.cpp" "src/simple_render_system.h" 
         "src/simple_render_system.cpp" "src/ovr_camera.h" 
         "src/ovr_camera.cpp" "src/keyboard_movement_controller.h"
-        "src/keyboard_movement_controller.cpp" "src/ovr_utils.h" "src/utils/resource_loader.h" "src/utils/resource_loader.cpp" "src/engine_config.h" "src/ovr_game_object.cpp")
+        "src/keyboard_movement_controller.cpp" "src/ovr_utils.h" "src/utils/resource_loader.h" "src/utils/resource_loader.cpp" "src/engine_config.h" "src/ovr_game_object.cpp" "src/ovr_image.cpp")
 
 
 target_include_directories(${PROJECT_NAME}
