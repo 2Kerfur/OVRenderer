@@ -10,6 +10,7 @@
 #include "AppWindow.h"
 #include "ovr_device.h"
 #include "ovr_model.h"
+#include "ovr_image.h"
 #include "ovr_game_object.h"
 #include "ovr_renderer.h"
 

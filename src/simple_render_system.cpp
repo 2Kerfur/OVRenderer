@@ -72,9 +72,6 @@ namespace ovr {
 			);
 	}
 
-
-
-
 	void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer,
 		std::vector<OvrGameObject>& gameObjects,
 		const OvrCamera& camera) {

@@ -71,25 +71,36 @@ namespace ovr {
     
 	void MainApp::loadGameObjects()
 	{
-        std::shared_ptr<OvrModel> ovrModel[10];
-        for (int i = 0; i < 10; i++) {
+        std::shared_ptr<OvrModel> ovrModel[1];
+
+        //std::shared_ptr<OvrImage> ovrImage[1];
+        //ovrImage[0] = OvrImage::createImageFromFile(ovrDevice,
+        //    "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64 - Release\\resources\\images\\textures\\text_texture.jpg");
+        
+
+        for (int i = 0; i < 1; i++) {
             ovrModel[i] = OvrModel::createModelFromFile(
                 ovrDevice,
                 "D:\\DEV\\MY_GITHUB\\OVRenderer\\out\\build\\x64-Release\\resources\\models\\lada_niva.obj");
             std::cout << i;
         }
         float trans = 0;
-        ovr::OvrGameObject cube[10];
-        for (int i = 0; i < 10; i++) {
-            cube[i] = OvrGameObject::createGameObject();
-            cube[i].model = ovrModel[0];
-            cube[i].transform.translation = { trans, .0f, 2.5f };
-            cube[i].transform.scale = { .5f, .5f, .5f };
+        ovr::OvrGameObject car[1];
+        for (int i = 0; i < 1; i++) {
+            car[i] = OvrGameObject::createGameObject();
+            car[i].model = ovrModel[0];
+            car[i].transform.translation = { trans, .0f, 2.5f };
+            car[i].transform.scale = { .5f, .5f, .5f };
             trans = trans + 1;
         }
 
-        for (int i = 0; i < 10; i++) {
-            gameObjects.push_back(std::move(cube[i]));
+        //ovr::OvrGameObject image[1];
+        //car[0] = OvrGameObject::createGameObject();
+        //car[]
+        
+
+        for (int i = 0; i < 1; i++) {
+            gameObjects.push_back(std::move(car[i]));
         }
 
 	}

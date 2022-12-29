@@ -12,7 +12,6 @@
 
 
 #include <glm/gtc/matrix_transform.hpp>
-
 //std
 #include <memory>
 
@@ -47,6 +46,8 @@ namespace ovr {
 		id_t getId() { return id; }
 
 		std::shared_ptr<OvrModel> model{};
+		std::shared_ptr<OvrImage> image{};
+
 		glm::vec3 color{};
 		TransformComponent transform{};
 
